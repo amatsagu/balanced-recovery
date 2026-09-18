@@ -69,10 +69,12 @@ public class BalancedRecoveryConfig {
 						if (unstackableObj.has("nutrition")) {
 							unstackableNutritionMultiplier = Math.max(0, unstackableObj.get("nutrition").getAsFloat());
 						}
+
 						if (unstackableObj.has("saturation")) {
 							unstackableSaturationMultiplier = Math.max(0, unstackableObj.get("saturation").getAsFloat());
 						}
 					}
+
 					if (obj.has("displayHealthGained")) displayHealthGained = obj.get("displayHealthGained").getAsBoolean();
 
 					if (obj.has("warmthBlocks") && obj.get("warmthBlocks").isJsonArray()) {
@@ -177,6 +179,7 @@ public class BalancedRecoveryConfig {
 		if (unstackableNutritionMultiplier != 1.0F && stack != null && !stack.isEmpty() && stack.getMaxStackSize() == 1) {
 			multiplier *= unstackableNutritionMultiplier;
 		}
+
 		if (!foodModifiers.isEmpty() && stack != null && !stack.isEmpty()) {
 			for (FoodModifier modifier : foodModifiers) {
 				if (modifier.matches(stack)) {
@@ -193,6 +196,7 @@ public class BalancedRecoveryConfig {
 		if (unstackableSaturationMultiplier != 1.0F && stack != null && !stack.isEmpty() && stack.getMaxStackSize() == 1) {
 			multiplier *= unstackableSaturationMultiplier;
 		}
+
 		if (!foodModifiers.isEmpty() && stack != null && !stack.isEmpty()) {
 			for (FoodModifier modifier : foodModifiers) {
 				if (modifier.matches(stack)) {
@@ -263,6 +267,7 @@ public class BalancedRecoveryConfig {
 				propertyMatchers = new ArrayList<>();
 				for (String pair : props.split(",")) {
 					String[] kv = pair.split("=", 2);
+
 					if (kv.length == 2) {
 						String key = kv[0].trim();
 						String val = kv[1].trim();
@@ -303,6 +308,7 @@ public class BalancedRecoveryConfig {
 						return false;
 					}
 				}
+				
 				return true;
 			}
 
