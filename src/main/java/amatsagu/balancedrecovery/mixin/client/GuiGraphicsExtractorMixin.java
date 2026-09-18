@@ -1,0 +1,18 @@
+package amatsagu.balancedrecovery.mixin.client;
+
+import amatsagu.balancedrecovery.client.event.RenderFoodHealingEvent;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
+
+@Mixin(GuiGraphicsExtractor.class)
+public class GuiGraphicsExtractorMixin {
+	@ModifyArg(method = "blitSprite(Lcom/mojang/renderpearl/api/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIIIIIIII)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;blitSprite(Lcom/mojang/renderpearl/api/pipeline/RenderPipeline;Lnet/minecraft/client/renderer/texture/TextureAtlasSprite;IIIIIIIII)V"), index = 10)
+	private int balancedrecovery$displayHealthGained(int color) {
+		if (RenderFoodHealingEvent.Hearts.color != -1) {
+			return RenderFoodHealingEvent.Hearts.color;
+		}
+		return color;
+	}
+}

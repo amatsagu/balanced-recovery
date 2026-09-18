@@ -1,0 +1,29 @@
+{
+  "required": true,
+  "package": "amatsagu.balancedrecovery.mixin",
+  "plugin": "amatsagu.balancedrecovery.common.BalancedRecoveryMixinPlugin",
+  "compatibilityLevel": "JAVA_25",
+  "mixins": [
+	"FoodDataMixin",
+	"FoodPropertiesBuilderMixin",
+	"FoodPropertiesMixin",
+	"FoodsMixin",
+	"HungerMobEffectMixin",
+	"ItemPropertiesMixin",
+	"MinecraftServerMixin",
+	"PlayerMixin",
+	"SaturationMobEffectMixin",
+	"integration.farmersdelight.NourishmentAlwaysEatMixinSquared"
+  ],
+  "client": [
+	"client.GuiGraphicsExtractorMixin",
+	"client.HudMixin",
+	"integration.farmersdelight.client.NourishmentOverlayMixin"
+  ],
+  "injectors": {
+	"defaultRequire": 1
+  },
+  "overwrites": {
+	"requireAnnotations": true
+  }
+}

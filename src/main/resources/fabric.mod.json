@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${version}",
+  "name": "${mod_name}",
+  "description": "${mod_description}",
+  "authors": [
+	"Amatsagu"
+  ],
+  "contact": {
+	"homepage": "https://github.com/amatsagu/${project_name}",
+	"sources": "https://github.com/amatsagu/${project_name}",
+	"issues": "https://github.com/amatsagu/${project_name}/issues"
+  },
+  "license": "All Rights Reserved",
+  "icon": "assets/${mod_id}/icon.png",
+  "environment": "*",
+  "entrypoints": {
+	"main": [
+	  "amatsagu.balancedrecovery.common.BalancedRecovery"
+	],
+	"client": [
+	  "amatsagu.balancedrecovery.client.BalancedRecoveryClient"
+	],
+	"cardinal-components-entity": [
+	  "amatsagu.balancedrecovery.common.init.BalancedRecoveryEntityComponents"
+	]
+  },
+  "mixins": [
+	"${mod_id}.mixins.json"
+  ],
+  "accessWidener": "${mod_id}.classtweaker",
+  "depends": {
+	"fabricloader": "*",
+	"minecraft": "~26.3",
+	"java": ">=25",
+	"fabric-api": "*"
+  },
+  "conflicts": {
+	"appleskin": "*"
+  },
+  "breaks": {
+	"appleskin": "*"
+  },
+  "suggests": {
+	"farmersdelight": "*"
+  },
+  "custom": {
+	"cardinal-components": [
+	  "${mod_id}:food_healing"
+	]
+  }
+}

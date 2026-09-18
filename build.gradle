@@ -1,0 +1,87 @@
+plugins {
+	id("net.fabricmc.fabric-loom") version "${loom_version}"
+}
+
+version = "${version}"
+group = "${group}"
+base {
+	archivesName = "${mod_id}"
+}
+
+repositories {
+	maven {
+		name = "Mixin Squared"
+		url = "https://maven.bawnorton.com/releases"
+	}
+	maven {
+		name = "FabricMC"
+		url = "https://maven.fabricmc.net"
+	}
+	maven {
+		name = "Ladysnake"
+		url = "https://maven.ladysnake.org/releases"
+	}
+	maven {
+		name = "Modrinth"
+		url = "https://api.modrinth.com/maven"
+	}
+}
+
+loom {
+	def classTweaker = file("src/main/resources/${mod_id}.classtweaker")
+	if (classTweaker.exists()) {
+		accessWidenerPath = classTweaker
+	}
+
+	runs {
+		configureEach {
+			vmArg("--enable-final-field-mutation=ALL-UNNAMED")
+		}
+	}
+}
+
+dependencies {
+	minecraft("com.mojang:minecraft:${minecraft_version}")
+	implementation("net.fabricmc:fabric-loader:${loader_version}")
+	annotationProcessor("com.github.bawnorton.mixinsquared:mixinsquared-fabric:${mixin_squared_version}")
+	include(implementation("com.github.bawnorton.mixinsquared:mixinsquared-fabric:${mixin_squared_version}"))
+
+	include(implementation("org.ladysnake.cardinal-components-api:cardinal-components-base:${cca_version}"))
+	include(implementation("org.ladysnake.cardinal-components-api:cardinal-components-entity:${cca_version}"))
+
+	implementation("net.fabricmc.fabric-api:fabric-api:${fabric_api_version}")
+
+	compileOnly("maven.modrinth:farmers-delight-refabricated:${farmers_delight_refabricated_version}")
+}
+
+processResources {
+	filteringCharset = "UTF-8"
+	def props = [
+			"project_name"   : rootProject.name,
+			"mod_id"         : mod_id,
+			"mod_name"       : mod_name,
+			"mod_description": mod_description,
+			"version"        : version,
+	]
+	inputs.properties(props)
+	filesMatching(["fabric.mod.json"]) {
+		expand(props)
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 25
+}
+
+java {
+	withSourcesJar()
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
+}
+
+jar {
+	exclude(".cache/")
+	from(file("LICENSE")) {
+		rename("LICENSE", "LICENSE_${mod_id}")
+	}
+}
