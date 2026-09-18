@@ -11,7 +11,9 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.Property;
@@ -35,6 +37,8 @@ public class BalancedRecoveryConfig {
 
 	public static final List<String> warmthBlocks = new ArrayList<>();
 	public static final List<FoodModifier> foodModifiers = new ArrayList<>();
+
+	private static final List<WarmthMatcher> compiledWarmthMatchers = new ArrayList<>();
 
 	private static final Path CONFIG_PATH = FabricLoader.getInstance().getConfigDir().resolve("balanced_recovery.json");
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
@@ -77,6 +81,7 @@ public class BalancedRecoveryConfig {
 					}
 				}
 			}
+			recompileWarmthMatchers();
 			save();
 		} catch (Exception e) {
 			String errorMsg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
@@ -120,59 +125,21 @@ public class BalancedRecoveryConfig {
 		}
 	}
 
+	private static void recompileWarmthMatchers() {
+		compiledWarmthMatchers.clear();
+		for (String spec : warmthBlocks) {
+			compiledWarmthMatchers.add(new WarmthMatcher(spec));
+		}
+	}
+
 	public static boolean isWarmthSource(BlockState state) {
 		if (state == null) return false;
-		for (String target : warmthBlocks) {
-			if (matchesBlock(state, target)) {
+		for (WarmthMatcher matcher : compiledWarmthMatchers) {
+			if (matcher.matches(state)) {
 				return true;
 			}
 		}
 		return false;
-	}
-
-	private static boolean matchesBlock(BlockState state, String spec) {
-		if (spec == null || spec.isEmpty()) return false;
-		String target;
-		String props = null;
-		int open = spec.indexOf('[');
-		int close = spec.lastIndexOf(']');
-		if (open != -1 && close > open) {
-			target = spec.substring(0, open).trim();
-			props = spec.substring(open + 1, close).trim();
-		} else {
-			target = spec.trim();
-		}
-
-		if (target.startsWith("#")) {
-			Identifier id = Identifier.tryParse(target.substring(1));
-			if (id == null || !state.is(TagKey.create(Registries.BLOCK, id))) {
-				return false;
-			}
-		} else {
-			Identifier id = Identifier.tryParse(target);
-			if (id == null || !BuiltInRegistries.BLOCK.getOptional(id).map(state::is).orElse(false)) {
-				return false;
-			}
-		}
-
-		if (props != null && !props.isEmpty()) {
-			for (String pair : props.split(",")) {
-				String[] kv = pair.split("=", 2);
-				if (kv.length == 2) {
-					String key = kv[0].trim();
-					String value = kv[1].trim();
-					Property<?> prop = state.getBlock().getStateDefinition().getProperty(key);
-					if (prop == null || !state.getValue(prop).toString().equalsIgnoreCase(value)) {
-						return false;
-					}
-				}
-			}
-		} else {
-			if (state.hasProperty(BlockStateProperties.LIT) && !state.getValue(BlockStateProperties.LIT)) {
-				return false;
-			}
-		}
-		return true;
 	}
 
 	public static float getNutritionModifier(ItemStack stack) {
@@ -195,10 +162,111 @@ public class BalancedRecoveryConfig {
 		return multiplier;
 	}
 
+	private static class PropertyMatcher {
+		private final Property<?> property;
+		private final Comparable<?> expectedValue;
+
+		PropertyMatcher(Property<?> property, Comparable<?> expectedValue) {
+			this.property = property;
+			this.expectedValue = expectedValue;
+		}
+
+		boolean matches(BlockState state) {
+			return state.getValue(property).equals(expectedValue);
+		}
+	}
+
+	private static class WarmthMatcher {
+		private final String spec;
+		private TagKey<Block> tag;
+		private Block block;
+		private List<PropertyMatcher> propertyMatchers;
+		private boolean defaultRequireLit;
+		private boolean compiled = false;
+
+		WarmthMatcher(String spec) {
+			this.spec = spec;
+		}
+
+		void compile() {
+			if (spec == null || spec.isEmpty()) {
+				compiled = true;
+				return;
+			}
+			String target;
+			String props = null;
+			int open = spec.indexOf('[');
+			int close = spec.lastIndexOf(']');
+			if (open != -1 && close > open) {
+				target = spec.substring(0, open).trim();
+				props = spec.substring(open + 1, close).trim();
+			} else {
+				target = spec.trim();
+			}
+
+			if (target.startsWith("#")) {
+				Identifier id = Identifier.tryParse(target.substring(1));
+				if (id != null) {
+					tag = TagKey.create(Registries.BLOCK, id);
+				}
+			} else {
+				Identifier id = Identifier.tryParse(target);
+				if (id != null) {
+					block = BuiltInRegistries.BLOCK.getOptional(id).orElse(null);
+				}
+			}
+
+			if (props != null && !props.isEmpty() && block != null) {
+				propertyMatchers = new ArrayList<>();
+				for (String pair : props.split(",")) {
+					String[] kv = pair.split("=", 2);
+					if (kv.length == 2) {
+						String key = kv[0].trim();
+						String val = kv[1].trim();
+						Property<?> prop = block.getStateDefinition().getProperty(key);
+						if (prop != null) {
+							prop.getValue(val).ifPresent(v -> propertyMatchers.add(new PropertyMatcher(prop, v)));
+						}
+					}
+				}
+			} else if (props == null || props.isEmpty()) {
+				defaultRequireLit = true;
+			}
+			compiled = true;
+		}
+
+		boolean matches(BlockState state) {
+			if (!compiled) {
+				compile();
+			}
+			if (tag != null) {
+				if (!state.is(tag)) return false;
+			} else if (block != null) {
+				if (!state.is(block)) return false;
+			} else {
+				return false;
+			}
+
+			if (propertyMatchers != null && !propertyMatchers.isEmpty()) {
+				for (PropertyMatcher pm : propertyMatchers) {
+					if (!pm.matches(state)) return false;
+				}
+			} else if (defaultRequireLit) {
+				if (state.hasProperty(BlockStateProperties.LIT) && !state.getValue(BlockStateProperties.LIT)) {
+					return false;
+				}
+			}
+			return true;
+		}
+	}
+
 	public static class FoodModifier {
 		public final String target;
 		public final float nutrition;
 		public final float saturation;
+		private TagKey<Item> cachedTag;
+		private Item cachedItem;
+		private boolean compiled = false;
 
 		public FoodModifier(String target, float nutrition, float saturation) {
 			this.target = target;
@@ -206,20 +274,35 @@ public class BalancedRecoveryConfig {
 			this.saturation = saturation;
 		}
 
+		private void compile() {
+			if (target != null && !target.isEmpty()) {
+				if (target.startsWith("#")) {
+					Identifier id = Identifier.tryParse(target.substring(1));
+					if (id != null) {
+						cachedTag = TagKey.create(Registries.ITEM, id);
+					}
+				} else {
+					Identifier id = Identifier.tryParse(target);
+					if (id != null) {
+						cachedItem = BuiltInRegistries.ITEM.getOptional(id).orElse(null);
+					}
+				}
+			}
+			compiled = true;
+		}
+
 		public boolean matches(ItemStack stack) {
 			if (stack == null || stack.isEmpty() || target == null || target.isEmpty()) {
 				return false;
 			}
-			if (target.startsWith("#")) {
-				Identifier id = Identifier.tryParse(target.substring(1));
-				if (id != null) {
-					return stack.is(TagKey.create(Registries.ITEM, id));
-				}
-			} else {
-				Identifier id = Identifier.tryParse(target);
-				if (id != null) {
-					return BuiltInRegistries.ITEM.getOptional(id).map(stack::is).orElse(false);
-				}
+			if (!compiled) {
+				compile();
+			}
+			if (cachedItem != null) {
+				return stack.is(cachedItem);
+			}
+			if (cachedTag != null) {
+				return stack.is(cachedTag);
 			}
 			return false;
 		}

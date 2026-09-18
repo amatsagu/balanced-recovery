@@ -39,10 +39,10 @@ public abstract class HudMixin {
 
 	@Inject(method = "extractHearts", at = @At(value = "INVOKE_ASSIGN", target = "Lnet/minecraft/world/entity/player/Player;level()Lnet/minecraft/world/level/Level;"))
 	private void balancedrecovery$displayHealthGained(GuiGraphicsExtractor graphics, Player player, int xLeft, int yLineBase, int healthRowHeight, int heartOffsetIndex, float maxHealth, int currentHealth, int oldHealth, int absorption, boolean blink, CallbackInfo ci, @Local(name = "type") Hud.HeartType type) {
-		RenderFoodHealingEvent.Hearts.xPoses = new int[Mth.ceil(maxHealth / 2F)];
-		RenderFoodHealingEvent.Hearts.yPoses = new int[RenderFoodHealingEvent.Hearts.xPoses.length];
+		int size = Mth.ceil(maxHealth / 2F);
+		RenderFoodHealingEvent.Hearts.prepareBuffers(size);
 		RenderFoodHealingEvent.Hearts.heartType = type;
-		heartIndex = RenderFoodHealingEvent.Hearts.xPoses.length - 1;
+		heartIndex = size - 1;
 		setValues = true;
 	}
 

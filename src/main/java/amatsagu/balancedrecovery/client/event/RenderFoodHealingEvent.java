@@ -5,7 +5,6 @@ import amatsagu.balancedrecovery.common.BalancedRecovery;
 import amatsagu.balancedrecovery.common.BalancedRecoveryConfig;
 import amatsagu.balancedrecovery.common.component.entity.FoodHealingComponent;
 import amatsagu.balancedrecovery.common.event.IncreaseSaturationEvent;
-import amatsagu.balancedrecovery.common.init.BalancedRecoveryEntityComponents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
 import net.minecraft.ChatFormatting;
@@ -31,7 +30,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import vectorwing.farmersdelight.common.block.PieBlock;
 
-import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.List;
 
 import static amatsagu.balancedrecovery.common.component.entity.FoodHealingComponent.getTicksPerHeal;
@@ -47,6 +46,13 @@ public class RenderFoodHealingEvent {
 		public static Hud.HeartType heartType;
 		public static int[] xPoses = null, yPoses = null;
 		public static int color = -1;
+
+		public static void prepareBuffers(int size) {
+			if (xPoses == null || xPoses.length < size) {
+				xPoses = new int[size];
+				yPoses = new int[size];
+			}
+		}
 
 		public static void displayHealthGained(Minecraft client, GuiGraphicsExtractor graphics, Player player, float maxHealth) {
 			if (BalancedRecoveryConfig.displayHealthGained && BalancedRecoveryClient.naturalHealthRegeneration) {
@@ -80,7 +86,6 @@ public class RenderFoodHealingEvent {
 			}
 			fullTexture = halfTexture = null;
 			heartType = null;
-			xPoses = yPoses = null;
 			color = -1;
 		}
 	}
@@ -101,6 +106,7 @@ public class RenderFoodHealingEvent {
 	}
 
 	private static class Tooltip implements ItemTooltipCallback {
+		private static final NumberFormat NUMBER_FORMAT = NumberFormat.getNumberInstance();
 		private final Minecraft client = Minecraft.getInstance();
 
 		@Override
@@ -109,9 +115,9 @@ public class RenderFoodHealingEvent {
 				int healAmount = getItemHealAmount(client.player, client.level, stack);
 				if (healAmount > 0) {
 					float seconds = getMaximumHealTicks(healAmount, client.player, client.level, stack) / 20F;
-					MutableComponent text = Component.literal(DecimalFormat.getNumberInstance().format(healAmount / 2F) + " ").withStyle(ChatFormatting.GRAY);
+					MutableComponent text = Component.literal(NUMBER_FORMAT.format(healAmount / 2F) + " ").withStyle(ChatFormatting.GRAY);
 					text.append(Component.literal("❤ ").withStyle(ChatFormatting.RED));
-					text.append(Component.literal("/ " + DecimalFormat.getNumberInstance().format(seconds) + "s").withStyle(ChatFormatting.GRAY));
+					text.append(Component.literal("/ " + NUMBER_FORMAT.format(seconds) + "s").withStyle(ChatFormatting.GRAY));
 					lines.add(1, text);
 				}
 			}
@@ -126,7 +132,7 @@ public class RenderFoodHealingEvent {
 
 	private static int getHealAmount(Minecraft client, Player player, Level level) {
 		int toHeal;
-		FoodHealingComponent foodHealing = BalancedRecoveryEntityComponents.FOOD_HEALING.get(player);
+		FoodHealingComponent foodHealing = FoodHealingComponent.get(player);
 		if (foodHealing.getHealAmount() > 0) {
 			toHeal = foodHealing.getHealAmount() - foodHealing.getAmountHealed();
 		} else {
