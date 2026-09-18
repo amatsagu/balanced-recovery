@@ -1,5 +1,8 @@
 <div align="center">
-  <h1>Balanced Recovery</h1>
+  <h1>
+    <img src="src/main/resources/assets/balanced_recovery/icon.png" alt="Balanced Recovery Logo" width="48" height="48" align="middle" style="vertical-align: middle;" />
+    Balanced Recovery
+  </h1>
   <h3>A modern Fabric mod that removes hunger and makes food recover health over time.</h3>
 </div>
 
