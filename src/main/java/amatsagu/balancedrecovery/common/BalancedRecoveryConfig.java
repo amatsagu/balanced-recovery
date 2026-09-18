@@ -32,6 +32,8 @@ public class BalancedRecoveryConfig {
 
 	public static float healthGainMultiplier = 1F;
 	public static float regenerationTimeMultiplier = 1F;
+	public static float unstackableNutritionMultiplier = 2.0F;
+	public static float unstackableSaturationMultiplier = 2.0F;
 
 	public static boolean displayHealthGained = true;
 
@@ -62,6 +64,15 @@ public class BalancedRecoveryConfig {
 					if (obj.has("fasterFluidConsumption")) fasterFluidConsumption = obj.get("fasterFluidConsumption").getAsBoolean();
 					if (obj.has("healthGainMultiplier")) healthGainMultiplier = Math.max(0, obj.get("healthGainMultiplier").getAsFloat());
 					if (obj.has("regenerationTimeMultiplier")) regenerationTimeMultiplier = Math.max(0, obj.get("regenerationTimeMultiplier").getAsFloat());
+					if (obj.has("unstackableFoodMultiplier") && obj.get("unstackableFoodMultiplier").isJsonObject()) {
+						JsonObject unstackableObj = obj.getAsJsonObject("unstackableFoodMultiplier");
+						if (unstackableObj.has("nutrition")) {
+							unstackableNutritionMultiplier = Math.max(0, unstackableObj.get("nutrition").getAsFloat());
+						}
+						if (unstackableObj.has("saturation")) {
+							unstackableSaturationMultiplier = Math.max(0, unstackableObj.get("saturation").getAsFloat());
+						}
+					}
 					if (obj.has("displayHealthGained")) displayHealthGained = obj.get("displayHealthGained").getAsBoolean();
 
 					if (obj.has("warmthBlocks") && obj.get("warmthBlocks").isJsonArray()) {
@@ -108,6 +119,12 @@ public class BalancedRecoveryConfig {
 			obj.addProperty("fasterFluidConsumption", fasterFluidConsumption);
 			obj.addProperty("healthGainMultiplier", healthGainMultiplier);
 			obj.addProperty("regenerationTimeMultiplier", regenerationTimeMultiplier);
+
+			JsonObject unstackableObj = new JsonObject();
+			unstackableObj.addProperty("nutrition", unstackableNutritionMultiplier);
+			unstackableObj.addProperty("saturation", unstackableSaturationMultiplier);
+			obj.add("unstackableFoodMultiplier", unstackableObj);
+
 			obj.addProperty("displayHealthGained", displayHealthGained);
 
 			JsonArray warmthArray = new JsonArray();
@@ -157,9 +174,14 @@ public class BalancedRecoveryConfig {
 
 	public static float getNutritionModifier(ItemStack stack) {
 		float multiplier = 1.0F;
-		for (FoodModifier modifier : foodModifiers) {
-			if (modifier.matches(stack)) {
-				multiplier *= modifier.nutrition;
+		if (unstackableNutritionMultiplier != 1.0F && stack != null && !stack.isEmpty() && stack.getMaxStackSize() == 1) {
+			multiplier *= unstackableNutritionMultiplier;
+		}
+		if (!foodModifiers.isEmpty() && stack != null && !stack.isEmpty()) {
+			for (FoodModifier modifier : foodModifiers) {
+				if (modifier.matches(stack)) {
+					multiplier *= modifier.nutrition;
+				}
 			}
 		}
 
@@ -168,9 +190,14 @@ public class BalancedRecoveryConfig {
 
 	public static float getSaturationModifier(ItemStack stack) {
 		float multiplier = 1.0F;
-		for (FoodModifier modifier : foodModifiers) {
-			if (modifier.matches(stack)) {
-				multiplier *= modifier.saturation;
+		if (unstackableSaturationMultiplier != 1.0F && stack != null && !stack.isEmpty() && stack.getMaxStackSize() == 1) {
+			multiplier *= unstackableSaturationMultiplier;
+		}
+		if (!foodModifiers.isEmpty() && stack != null && !stack.isEmpty()) {
+			for (FoodModifier modifier : foodModifiers) {
+				if (modifier.matches(stack)) {
+					multiplier *= modifier.saturation;
+				}
 			}
 		}
 

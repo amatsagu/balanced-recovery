@@ -17,6 +17,7 @@
   * `Hunger`: prevents you from healing using food, and can even cause damage at higher levels.
   * `Saturation`: instant heals you based on the amplifier.
   * `Nourishment`: slowly heals you every 10 seconds. This effect requires **Farmer's Delight** to be installed.
+- Unstackable food items (such as stews, soups, and bowls) give bonus nutrition and saturation by default. If another mod or datapack increases their stack size above 1, this bonus automatically backs off.
 - Adds new warmth effect: (lit) furnaces & campfires will give you weak regeneration effect when nearby (by default 3 blocks range).
 
 ## Configuration
@@ -30,6 +31,10 @@ Settings can be changed in `.minecraft/config/balanced_recovery.json`:
   "fasterFluidConsumption": true,
   "healthGainMultiplier": 1.0,
   "regenerationTimeMultiplier": 1.0,
+  "unstackableFoodMultiplier": {
+    "nutrition": 2.0,
+    "saturation": 2.0
+  },
   "displayHealthGained": true,
   "warmthBlocks": [
     "minecraft:campfire[lit=true]",
