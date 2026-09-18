@@ -63,13 +63,20 @@ processResources {
 }
 
 tasks.withType(JavaCompile).configureEach {
+	it.options.encoding = "UTF-8"
 	it.options.release = 25
+	it.options.compilerArgs << "-Xlint:deprecation"
 }
 
 java {
 	withSourcesJar()
 	sourceCompatibility = JavaVersion.VERSION_25
 	targetCompatibility = JavaVersion.VERSION_25
+}
+
+tasks.withType(AbstractArchiveTask).configureEach {
+	reproducibleFileOrder = true
+	preserveFileTimestamps = false
 }
 
 jar {

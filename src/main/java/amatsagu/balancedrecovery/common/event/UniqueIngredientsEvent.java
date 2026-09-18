@@ -23,6 +23,7 @@ import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.world.item.crafting.display.SlotDisplay;
 import vectorwing.farmersdelight.common.crafting.CookingPotRecipe;
 import vectorwing.farmersdelight.common.registry.ModRecipeTypes;
 
@@ -70,11 +71,19 @@ public class UniqueIngredientsEvent {
 	private static int getUniqueIngredients(Recipe<?> recipe) {
 		Set<Ingredient> unique = new HashSet<>();
 		for (Ingredient ingredient : recipe.placementInfo().ingredients()) {
-			if (ingredient.items().anyMatch(UniqueIngredientsEvent::isFoodIngredient)) {
+			if (hasFoodIngredient(ingredient)) {
 				unique.add(ingredient);
 			}
 		}
 		return unique.size();
+	}
+
+	private static boolean hasFoodIngredient(Ingredient ingredient) {
+		return switch (ingredient.display()) {
+			case SlotDisplay.TagSlotDisplay tagDisplay -> tagDisplay.tag().stream().anyMatch(UniqueIngredientsEvent::isFoodIngredient);
+			case SlotDisplay.ItemSlotDisplay itemDisplay -> isFoodIngredient(itemDisplay.item());
+			default -> false;
+		};
 	}
 
 	private static boolean isFoodIngredient(Holder<Item> itemEntry) {

@@ -1,7 +1,7 @@
 <div align="center">
   <h1>
-    <img src="src/main/resources/assets/balanced_recovery/icon.png" alt="Balanced Recovery Logo" width="48" height="48" align="middle" style="vertical-align: middle;" />
-    Balanced Recovery
+    <img src="src/main/resources/assets/balanced_recovery/icon.png" alt="Balanced Recovery Logo" width="48" height="48" align="middle" />
+    <sub>Balanced Recovery</sub>
   </h1>
   <h3>A modern Fabric mod that removes hunger and makes food recover health over time.</h3>
 </div>
@@ -20,7 +20,6 @@
   * `Hunger`: prevents you from healing using food, and can even cause damage at higher levels.
   * `Saturation`: instant heals you based on the amplifier.
   * `Nourishment`: slowly heals you every 10 seconds. This effect requires **Farmer's Delight** to be installed.
-- Unstackable food items (such as stews, soups, and bowls) give bonus nutrition and saturation by default. If another mod or datapack increases their stack size above 1, this bonus automatically backs off.
 - Adds new warmth effect: (lit) furnaces & campfires will give you weak regeneration effect when nearby (by default 3 blocks range).
 
 ## Configuration
