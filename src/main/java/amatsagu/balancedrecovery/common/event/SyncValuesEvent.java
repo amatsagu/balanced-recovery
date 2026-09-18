@@ -18,6 +18,7 @@ public class SyncValuesEvent implements ServerPlayConnectionEvents.Join {
 		if (!listener.getPlayer().level().getGameRules().get(GameRules.NATURAL_HEALTH_REGENERATION)) {
 			SyncNaturalHealthRegenerationPayload.send(listener.getPlayer(), false);
 		}
+		
 		FoodHealingComponent.get(listener.getPlayer()).sync();
 	}
 }

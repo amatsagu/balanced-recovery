@@ -19,16 +19,20 @@ public class HungerMobEffectMixin {
 		if (!serverLevel.getGameRules().get(GameRules.NATURAL_HEALTH_REGENERATION)) {
 			amplification++;
 		}
-		if (amplification > 0) {
-			int duration = mob.getEffect(MobEffects.HUNGER).getDuration();
-			if (duration == MobEffectInstance.INFINITE_DURATION) {
-				duration = mob.tickCount;
-			}
-			if (duration % Math.max(1, 40 / amplification) == 0) {
-				if (mob.getHealth() > 1 || serverLevel.getDifficulty() == Difficulty.HARD) {
-					mob.hurtServer(serverLevel, mob.damageSources().starve(), 1);
-				}
-			}
+
+		if (amplification <= 0) {
+			return;
+		}
+
+		MobEffectInstance effect = mob.getEffect(MobEffects.HUNGER);
+		if (effect == null) {
+			return;
+		}
+
+		int duration = (effect.getDuration() == MobEffectInstance.INFINITE_DURATION) ? mob.tickCount : effect.getDuration();
+
+		if (duration % Math.max(1, 40 / amplification) == 0 && (mob.getHealth() > 1 || serverLevel.getDifficulty() == Difficulty.HARD)) {
+			mob.hurtServer(serverLevel, mob.damageSources().starve(), 1);
 		}
 	}
 }

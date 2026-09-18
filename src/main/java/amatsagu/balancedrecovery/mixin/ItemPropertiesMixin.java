@@ -19,10 +19,12 @@ public class ItemPropertiesMixin {
 	private <T> T balancedrecovery$fasterFluidConsumption(T value, DataComponentType<T> type) {
 		if (BalancedRecoveryConfig.fasterFluidConsumption && type == DataComponents.CONSUMABLE) {
 			Consumable consumable = (Consumable) value;
+			
 			if (consumable.animation() == ItemUseAnimation.DRINK) {
 				return (T) new Consumable(consumable.consumeSeconds() / 2, consumable.animation(), consumable.sound(), consumable.hasConsumeParticles(), consumable.onConsumeEffects());
 			}
 		}
+
 		return value;
 	}
 
@@ -32,6 +34,7 @@ public class ItemPropertiesMixin {
 		if (BalancedRecoveryConfig.fasterFluidConsumption && ((StewHolder) (Object) foodProperties).balancedrecovery$isStew()) {
 			return new Consumable(consumable.consumeSeconds() / 2, consumable.animation(), consumable.sound(), consumable.hasConsumeParticles(), consumable.onConsumeEffects());
 		}
+		
 		return consumable;
 	}
 }

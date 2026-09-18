@@ -20,6 +20,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -36,6 +37,8 @@ import java.util.List;
 import static amatsagu.balancedrecovery.common.component.entity.FoodHealingComponent.getTicksPerHeal;
 
 public class RenderFoodHealingEvent {
+	private static ItemStack CAKE_STACK = null;
+
 	public static void init() {
 		ClientTickEvents.END_LEVEL_TICK.register(new Tick());
 		ItemTooltipCallback.EVENT.register(new Tooltip());
@@ -55,53 +58,60 @@ public class RenderFoodHealingEvent {
 		}
 
 		public static void displayHealthGained(Minecraft client, GuiGraphicsExtractor graphics, Player player, float maxHealth) {
-			if (BalancedRecoveryConfig.displayHealthGained && BalancedRecoveryClient.naturalHealthRegeneration) {
-				int health = Mth.ceil(player.getHealth());
-				if (health < maxHealth) {
-					int toHeal = getHealAmount(client, player, client.level);
-					if (toHeal > 0) {
-						color = ARGB.colorFromFloat((Mth.sin(Tick.renderTicks / 4F) + 1) / 3F, 1, 1, 1);
-						for (int i = health; i < maxHealth; i++) {
-							int index = i / 2;
-							int currentHealth = i - health;
-							if (currentHealth < toHeal) {
-								boolean currentlyHalf = false;
-								int xOffset = 0;
-								if (i % 2 == 1) {
-									xOffset = 5;
-								}
-								if (health % 2 != currentHealth % 2) {
-									currentlyHalf = true;
-								}
-								graphics.blitSprite(
-										RenderPipelines.GUI_TEXTURED, currentlyHalf ? fullTexture : halfTexture,
-										9, 9,
-										currentlyHalf ? 5 : 0, 0,
-										xPoses[index] + xOffset, yPoses[index],
-										5, 9);
-							}
-						}
-					}
+			try {
+				if (!BalancedRecoveryConfig.displayHealthGained || !BalancedRecoveryClient.naturalHealthRegeneration) {
+					return;
 				}
+
+				if (player == null) {
+					return;
+				}
+
+				int health = Mth.ceil(player.getHealth());
+				if (health >= maxHealth) {
+					return;
+				}
+
+				int toHeal = getHealAmount(client, player, client.level);
+				if (toHeal <= 0) {
+					return;
+				}
+
+				color = ARGB.colorFromFloat((Mth.sin(Tick.renderTicks / 4F) + 1) / 3F, 1, 1, 1);
+				int targetHealth = Math.min((int) maxHealth, health + toHeal);
+				for (int i = health; i < targetHealth; i++) {
+					int index = i / 2;
+					int currentHealth = i - health;
+					int xOffset = (i % 2 == 1) ? 5 : 0;
+					boolean currentlyHalf = (health % 2 != currentHealth % 2);
+
+					graphics.blitSprite(
+							RenderPipelines.GUI_TEXTURED, currentlyHalf ? fullTexture : halfTexture,
+							9, 9,
+							currentlyHalf ? 5 : 0, 0,
+							xPoses[index] + xOffset, yPoses[index],
+							5, 9);
+				}
+			} finally {
+				fullTexture = halfTexture = null;
+				heartType = null;
+				color = -1;
 			}
-			fullTexture = halfTexture = null;
-			heartType = null;
-			color = -1;
 		}
 	}
 
 	private static class Tick implements ClientTickEvents.EndLevelTick {
 		private final Minecraft client = Minecraft.getInstance();
-
 		private static int renderTicks = 0;
 
 		@Override
 		public void onEndTick(ClientLevel level) {
-			if (getHealAmount(client, client.player, client.level) == 0) {
+			if (client.player == null || getHealAmount(client, client.player, level) == 0) {
 				renderTicks = (int) -Math.TAU;
-			} else {
-				renderTicks++;
+				return;
 			}
+
+			renderTicks++;
 		}
 	}
 
@@ -111,67 +121,109 @@ public class RenderFoodHealingEvent {
 
 		@Override
 		public void getTooltip(ItemStack stack, Item.TooltipContext tooltipContext, TooltipFlag tooltipFlag, List<Component> lines) {
-			if (BalancedRecoveryConfig.displayHealthGained && BalancedRecoveryClient.naturalHealthRegeneration && stack.has(DataComponents.FOOD)) {
-				int healAmount = getItemHealAmount(client.player, client.level, stack);
-				if (healAmount > 0) {
-					float seconds = getMaximumHealTicks(healAmount, client.player, client.level, stack) / 20F;
-					MutableComponent text = Component.literal(NUMBER_FORMAT.format(healAmount / 2F) + " ").withStyle(ChatFormatting.GRAY);
-					text.append(Component.literal("❤ ").withStyle(ChatFormatting.RED));
-					text.append(Component.literal("/ " + NUMBER_FORMAT.format(seconds) + "s").withStyle(ChatFormatting.GRAY));
-					lines.add(1, text);
-				}
+			if (!BalancedRecoveryConfig.displayHealthGained || !BalancedRecoveryClient.naturalHealthRegeneration) {
+				return;
 			}
+
+			if (stack == null || !stack.has(DataComponents.FOOD)) {
+				return;
+			}
+
+			int healAmount = getItemHealAmount(client.player, client.level, stack);
+			if (healAmount <= 0) {
+				return;
+			}
+
+			float seconds = getMaximumHealTicks(healAmount, client.player, client.level, stack) / 20F;
+			MutableComponent text = Component.literal(NUMBER_FORMAT.format(healAmount / 2F) + " ").withStyle(ChatFormatting.GRAY);
+			text.append(Component.literal("❤ ").withStyle(ChatFormatting.RED));
+			text.append(Component.literal("/ " + NUMBER_FORMAT.format(seconds) + "s").withStyle(ChatFormatting.GRAY));
+			lines.add(1, text);
 		}
 
 		private static int getMaximumHealTicks(int healAmount, Player player, Level level, ItemStack stack) {
-			float saturation = stack.get(DataComponents.FOOD).saturation();
-			saturation = IncreaseSaturationEvent.modifySaturation(saturation, level, player, stack);
+			FoodProperties food = stack.get(DataComponents.FOOD);
+			if (food == null) {
+				return 0;
+			}
+
+			float saturation = IncreaseSaturationEvent.modifySaturation(food.saturation(), level, player, stack);
 			return healAmount * getTicksPerHeal(saturation);
 		}
 	}
 
 	private static int getHealAmount(Minecraft client, Player player, Level level) {
-		int toHeal;
+		if (player == null || level == null) {
+			return 0;
+		}
+
 		FoodHealingComponent foodHealing = FoodHealingComponent.get(player);
 		if (foodHealing.getHealAmount() > 0) {
-			toHeal = foodHealing.getHealAmount() - foodHealing.getAmountHealed();
-		} else {
-			toHeal = getItemHealAmount(player, level, player.getUseItem());
-			if (toHeal == 0) {
-				if (client.hitResult instanceof BlockHitResult blockHitResult) {
-					toHeal = getBlockHealAmount(player, level, level.getBlockState(blockHitResult.getBlockPos()));
-				}
-				if (toHeal == 0) {
-					toHeal = getItemHealAmount(player, level, player.getMainHandItem());
-					if (toHeal == 0) {
-						toHeal = getItemHealAmount(player, level, player.getOffhandItem());
-					}
-				}
+			return foodHealing.getHealAmount() - foodHealing.getAmountHealed();
+		}
+
+		int toHeal = getItemHealAmount(player, level, player.getUseItem());
+		if (toHeal > 0) {
+			return toHeal;
+		}
+
+		if (client != null && client.hitResult instanceof BlockHitResult blockHitResult) {
+			toHeal = getBlockHealAmount(player, level, level.getBlockState(blockHitResult.getBlockPos()));
+			if (toHeal > 0) {
+				return toHeal;
 			}
 		}
-		return toHeal;
+
+		toHeal = getItemHealAmount(player, level, player.getMainHandItem());
+		if (toHeal > 0) {
+			return toHeal;
+		}
+
+		return getItemHealAmount(player, level, player.getOffhandItem());
+	}
+
+	private static ItemStack getCakeStack() {
+		if (CAKE_STACK == null) {
+			CAKE_STACK = Items.CAKE.getDefaultInstance();
+		}
+
+		return CAKE_STACK;
 	}
 
 	private static int getBlockHealAmount(Player player, Level level, BlockState state) {
+		if (state == null) {
+			return 0;
+		}
+		
 		if (state.getBlock() instanceof CakeBlock) {
-			return getItemHealAmount(player, level, Items.CAKE.getDefaultInstance());
-		} else if (BalancedRecovery.farmersDelightLoaded && state.getBlock() instanceof PieBlock pieBlock) {
+			return getItemHealAmount(player, level, getCakeStack());
+		}
+
+		if (BalancedRecovery.farmersDelightLoaded && state.getBlock() instanceof PieBlock pieBlock) {
 			return getItemHealAmount(player, level, pieBlock.getPieSliceItem());
 		}
+		
 		return 0;
 	}
 
 	private static int getItemHealAmount(Player player, Level level, ItemStack stack) {
+		if (stack == null || stack.isEmpty()) {
+			return 0;
+		}
+
 		int nutrition = 0;
-		if (stack.has(DataComponents.FOOD)) {
-			nutrition = stack.get(DataComponents.FOOD).nutrition();
+		FoodProperties food = stack.get(DataComponents.FOOD);
+		if (food != null) {
+			nutrition = food.nutrition();
 		} else if (stack.is(Items.CAKE)) {
 			nutrition = 2;
 		}
-		if (nutrition != 0) {
-			nutrition = IncreaseSaturationEvent.modifyNutrition(nutrition, level, player, stack);
-			return Mth.floor(nutrition * BalancedRecoveryConfig.healthGainMultiplier);
+
+		if (nutrition <= 0) {
+			return 0;
 		}
-		return 0;
+
+		nutrition = IncreaseSaturationEvent.modifyNutrition(nutrition, level, player, stack);
+		return Mth.floor(nutrition * BalancedRecoveryConfig.healthGainMultiplier);
 	}
 }

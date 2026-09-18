@@ -76,6 +76,7 @@ public abstract class HudMixin {
 			RenderFoodHealingEvent.Hearts.fullTexture = value;
 			RenderFoodHealingEvent.Hearts.halfTexture = other;
 		}
+
 		return value;
 	}
 
@@ -84,6 +85,7 @@ public abstract class HudMixin {
 		if (getCameraPlayer().getArmorValue() == 0) {
 			return yLineAir + 10;
 		}
+
 		return yLineAir;
 	}
 
@@ -112,6 +114,7 @@ public abstract class HudMixin {
 		if (Minecraft.getInstance().gui.hud.getPlayerVehicleWithHealth() != null) {
 			return Integer.MIN_VALUE;
 		}
+		
 		return value + 10;
 	}
 }

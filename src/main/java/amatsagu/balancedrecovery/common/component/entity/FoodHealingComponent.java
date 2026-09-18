@@ -113,25 +113,38 @@ public class FoodHealingComponent {
 	public void startHealing(int food, float saturation) {
 		if (fromSaturation) {
 			fromSaturation = false;
-			int duration = obj.getEffect(MobEffects.SATURATION).getDuration();
+			MobEffectInstance effect = obj.getEffect(MobEffects.SATURATION);
+			if (effect == null) {
+				return;
+			}
+
+			int duration = effect.getDuration();
 			if (duration == MobEffectInstance.INFINITE_DURATION) {
 				duration = obj.tickCount;
 			}
+
 			if (duration % 2 == 0) {
 				obj.heal(food);
 			}
-		} else if (food > 0) {
-			healAmount = food;
-			ticksPerHeal = getTicksPerHeal(saturation);
-			int maxHealTicks = getMaximumHealTicks();
-			for (Identifier id : getFoodItemIds()) {
-				obj.getCooldowns().addCooldown(id, maxHealTicks);
-			}
-			for (int i = 0; i < obj.getInventory().getContainerSize(); i++) {
-				ItemStack stack = obj.getInventory().getItem(i);
-				if (stack.has(DataComponents.FOOD)) {
-					obj.getCooldowns().addCooldown(stack, maxHealTicks);
-				}
+
+			return;
+		}
+
+		if (food <= 0) {
+			return;
+		}
+
+		healAmount = food;
+		ticksPerHeal = getTicksPerHeal(saturation);
+		int maxHealTicks = getMaximumHealTicks();
+		for (Identifier id : getFoodItemIds()) {
+			obj.getCooldowns().addCooldown(id, maxHealTicks);
+		}
+
+		for (int i = 0; i < obj.getInventory().getContainerSize(); i++) {
+			ItemStack stack = obj.getInventory().getItem(i);
+			if (stack.has(DataComponents.FOOD)) {
+				obj.getCooldowns().addCooldown(stack, maxHealTicks);
 			}
 		}
 	}
@@ -146,8 +159,10 @@ public class FoodHealingComponent {
 					list.add(BuiltInRegistries.ITEM.getKey(item));
 				}
 			}
+
 			FOOD_ITEM_IDS = list;
 		}
+
 		return FOOD_ITEM_IDS;
 	}
 
@@ -157,17 +172,21 @@ public class FoodHealingComponent {
 	}
 
 	private void tickFoodHealing() {
-		if (healAmount > 0) {
-			healTicks++;
-			if (healTicks % ticksPerHeal == 0) {
-				if (obj.level() instanceof ServerLevel level && !obj.hasEffect(MobEffects.HUNGER) && level.getGameRules().get(GameRules.NATURAL_HEALTH_REGENERATION)) {
-					obj.heal(1);
-				}
-				amountHealed++;
+		if (healAmount <= 0) {
+			return;
+		}
+
+		healTicks++;
+		if (healTicks % ticksPerHeal == 0) {
+			if (obj.level() instanceof ServerLevel level && !obj.hasEffect(MobEffects.HUNGER) && level.getGameRules().get(GameRules.NATURAL_HEALTH_REGENERATION)) {
+				obj.heal(1);
 			}
-			if (healTicks == getMaximumHealTicks()) {
-				healAmount = ticksPerHeal = healTicks = amountHealed = 0;
-			}
+
+			amountHealed++;
+		}
+
+		if (healTicks >= getMaximumHealTicks()) {
+			healAmount = ticksPerHeal = healTicks = amountHealed = 0;
 		}
 	}
 
@@ -176,6 +195,7 @@ public class FoodHealingComponent {
 			if (BalancedRecoveryConfig.warmthBlocks.isEmpty()) {
 				return;
 			}
+
 			Optional<BlockPos> closestSource = obj.level().findBlocksInBoxByManhattanDistance(obj.blockPosition(), BalancedRecoveryConfig.warmthDetectionRange).filterState(BalancedRecoveryConfig::isWarmthSource).findFirst();
 			if (closestSource.isPresent()) {
 				obj.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 200, 0, true, true, true));
@@ -184,15 +204,22 @@ public class FoodHealingComponent {
 	}
 
 	private void tickNourishment() {
-		if (BalancedRecovery.farmersDelightLoaded && obj.level() instanceof ServerLevel && obj.hasEffect(ModEffects.NOURISHMENT)) {
-			MobEffectInstance effect = obj.getEffect(ModEffects.NOURISHMENT);
-			int duration = effect.getDuration();
-			if (duration == MobEffectInstance.INFINITE_DURATION) {
-				duration = obj.tickCount;
-			}
-			if (duration % 200 == 0) {
-				obj.heal(effect.getAmplifier() + 1);
-			}
+		if (!BalancedRecovery.farmersDelightLoaded || !(obj.level() instanceof ServerLevel)) {
+			return;
+		}
+
+		MobEffectInstance effect = obj.getEffect(ModEffects.NOURISHMENT);
+		if (effect == null) {
+			return;
+		}
+
+		int duration = effect.getDuration();
+		if (duration == MobEffectInstance.INFINITE_DURATION) {
+			duration = obj.tickCount;
+		}
+		
+		if (duration % 200 == 0) {
+			obj.heal(effect.getAmplifier() + 1);
 		}
 	}
 }

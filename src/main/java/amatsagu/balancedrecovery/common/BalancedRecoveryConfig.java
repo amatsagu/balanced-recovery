@@ -81,6 +81,7 @@ public class BalancedRecoveryConfig {
 					}
 				}
 			}
+
 			recompileWarmthMatchers();
 			save();
 		} catch (Exception e) {
@@ -104,6 +105,7 @@ public class BalancedRecoveryConfig {
 			for (String block : warmthBlocks) {
 				warmthArray.add(block);
 			}
+
 			obj.add("warmthBlocks", warmthArray);
 
 			JsonArray modifiersArray = new JsonArray();
@@ -114,8 +116,8 @@ public class BalancedRecoveryConfig {
 				modObj.addProperty("saturation", modifier.saturation);
 				modifiersArray.add(modObj);
 			}
-			obj.add("foodModifiers", modifiersArray);
 
+			obj.add("foodModifiers", modifiersArray);
 			try (Writer writer = Files.newBufferedWriter(CONFIG_PATH)) {
 				GSON.toJson(obj, writer);
 			}
@@ -134,11 +136,13 @@ public class BalancedRecoveryConfig {
 
 	public static boolean isWarmthSource(BlockState state) {
 		if (state == null || compiledWarmthMatchers.isEmpty()) return false;
+
 		for (WarmthMatcher matcher : compiledWarmthMatchers) {
 			if (matcher.matches(state)) {
 				return true;
 			}
 		}
+
 		return false;
 	}
 
@@ -149,6 +153,7 @@ public class BalancedRecoveryConfig {
 				multiplier *= modifier.nutrition;
 			}
 		}
+
 		return multiplier;
 	}
 
@@ -159,6 +164,7 @@ public class BalancedRecoveryConfig {
 				multiplier *= modifier.saturation;
 			}
 		}
+
 		return multiplier;
 	}
 
@@ -193,6 +199,7 @@ public class BalancedRecoveryConfig {
 				compiled = true;
 				return;
 			}
+
 			String target;
 			String props = null;
 			int open = spec.indexOf('[');
@@ -224,6 +231,7 @@ public class BalancedRecoveryConfig {
 						String key = kv[0].trim();
 						String val = kv[1].trim();
 						Property<?> prop = block.getStateDefinition().getProperty(key);
+						
 						if (prop != null) {
 							prop.getValue(val).ifPresent(v -> propertyMatchers.add(new PropertyMatcher(prop, v)));
 						}
@@ -232,6 +240,7 @@ public class BalancedRecoveryConfig {
 			} else if (props == null || props.isEmpty()) {
 				defaultRequireLit = true;
 			}
+
 			compiled = true;
 		}
 
@@ -239,23 +248,32 @@ public class BalancedRecoveryConfig {
 			if (!compiled) {
 				compile();
 			}
-			if (tag != null) {
-				if (!state.is(tag)) return false;
-			} else if (block != null) {
-				if (!state.is(block)) return false;
-			} else {
+
+			if (tag != null && !state.is(tag)) {
+				return false;
+			}
+
+			if (block != null && !state.is(block)) {
+				return false;
+			}
+
+			if (tag == null && block == null) {
 				return false;
 			}
 
 			if (propertyMatchers != null && !propertyMatchers.isEmpty()) {
 				for (PropertyMatcher pm : propertyMatchers) {
-					if (!pm.matches(state)) return false;
+					if (!pm.matches(state)) {
+						return false;
+					}
 				}
-			} else if (defaultRequireLit) {
-				if (state.hasProperty(BlockStateProperties.LIT) && !state.getValue(BlockStateProperties.LIT)) {
-					return false;
-				}
+				return true;
 			}
+
+			if (defaultRequireLit && state.hasProperty(BlockStateProperties.LIT) && !state.getValue(BlockStateProperties.LIT)) {
+				return false;
+			}
+
 			return true;
 		}
 	}
@@ -288,6 +306,7 @@ public class BalancedRecoveryConfig {
 					}
 				}
 			}
+
 			compiled = true;
 		}
 
@@ -295,15 +314,19 @@ public class BalancedRecoveryConfig {
 			if (stack == null || stack.isEmpty() || target == null || target.isEmpty()) {
 				return false;
 			}
+
 			if (!compiled) {
 				compile();
 			}
+
 			if (cachedItem != null) {
 				return stack.is(cachedItem);
 			}
+
 			if (cachedTag != null) {
 				return stack.is(cachedTag);
 			}
+			
 			return false;
 		}
 	}

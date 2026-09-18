@@ -43,6 +43,7 @@ public class BalancedRecovery implements ModInitializer {
 			if (alive) {
 				FoodHealingComponent.get(newPlayer).copyFrom(FoodHealingComponent.get(oldPlayer));
 			}
+			
 			FoodHealingComponent.get(newPlayer).sync();
 		});
 	}

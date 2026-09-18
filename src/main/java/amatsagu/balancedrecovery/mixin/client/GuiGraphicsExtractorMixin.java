@@ -13,6 +13,7 @@ public class GuiGraphicsExtractorMixin {
 		if (RenderFoodHealingEvent.Hearts.color != -1) {
 			return RenderFoodHealingEvent.Hearts.color;
 		}
+		
 		return color;
 	}
 }
