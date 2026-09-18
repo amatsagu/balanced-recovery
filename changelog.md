@@ -1,5 +1,5 @@
 ------------------------------------------------------
-Version 26.3-r1
+Version 1.0-26.3.X
 ------------------------------------------------------
 - Initial release of Balanced Recovery for Minecraft 26.3
 - Self-contained Fabric mod
