@@ -88,14 +88,10 @@ public class UniqueIngredientsEvent {
 				|| itemEntry.value() == Items.SUGAR;
 	}
 
-	private static boolean ignoresIngredientBonus(Item item) {
-		return item.getDefaultInstance().is(ConventionalItemTags.GOLDEN_FOODS);
-	}
-
 	private static void populate(MinecraftServer server) {
 		UNIQUE_INGREDIENTS.clear();
 		for (Item item : BuiltInRegistries.ITEM) {
-			if (item.components().has(DataComponents.FOOD) && !ignoresIngredientBonus(item)) {
+			if (item.components().has(DataComponents.FOOD)) {
 				int uniqueIngredients = getUniqueIngredients(item, server);
 				if (uniqueIngredients > 0) {
 					UNIQUE_INGREDIENTS.put(item, uniqueIngredients);
