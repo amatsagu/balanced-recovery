@@ -18,10 +18,6 @@ repositories {
 		url = "https://maven.fabricmc.net"
 	}
 	maven {
-		name = "Ladysnake"
-		url = "https://maven.ladysnake.org/releases"
-	}
-	maven {
 		name = "Modrinth"
 		url = "https://api.modrinth.com/maven"
 	}
@@ -45,9 +41,6 @@ dependencies {
 	implementation("net.fabricmc:fabric-loader:${loader_version}")
 	annotationProcessor("com.github.bawnorton.mixinsquared:mixinsquared-fabric:${mixin_squared_version}")
 	include(implementation("com.github.bawnorton.mixinsquared:mixinsquared-fabric:${mixin_squared_version}"))
-
-	include(implementation("org.ladysnake.cardinal-components-api:cardinal-components-base:${cca_version}"))
-	include(implementation("org.ladysnake.cardinal-components-api:cardinal-components-entity:${cca_version}"))
 
 	implementation("net.fabricmc.fabric-api:fabric-api:${fabric_api_version}")
 

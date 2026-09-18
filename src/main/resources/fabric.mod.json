@@ -21,9 +21,6 @@
 	],
 	"client": [
 	  "amatsagu.balancedrecovery.client.BalancedRecoveryClient"
-	],
-	"cardinal-components-entity": [
-	  "amatsagu.balancedrecovery.common.init.BalancedRecoveryEntityComponents"
 	]
   },
   "mixins": [
@@ -44,10 +41,5 @@
   },
   "suggests": {
 	"farmersdelight": "*"
-  },
-  "custom": {
-	"cardinal-components": [
-	  "${mod_id}:food_healing"
-	]
   }
 }

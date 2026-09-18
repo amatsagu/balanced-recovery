@@ -1,6 +1,7 @@
 package amatsagu.balancedrecovery.common.event;
 
 import amatsagu.balancedrecovery.client.payload.SyncNaturalHealthRegenerationPayload;
+import amatsagu.balancedrecovery.common.component.entity.FoodHealingComponent;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.MinecraftServer;
@@ -17,5 +18,6 @@ public class SyncValuesEvent implements ServerPlayConnectionEvents.Join {
 		if (!listener.getPlayer().level().getGameRules().get(GameRules.NATURAL_HEALTH_REGENERATION)) {
 			SyncNaturalHealthRegenerationPayload.send(listener.getPlayer(), false);
 		}
+		FoodHealingComponent.get(listener.getPlayer()).sync();
 	}
 }

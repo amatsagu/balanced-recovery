@@ -2,6 +2,7 @@ package amatsagu.balancedrecovery.client;
 
 import amatsagu.balancedrecovery.client.event.RenderFoodHealingEvent;
 import amatsagu.balancedrecovery.client.event.ResetValuesEvent;
+import amatsagu.balancedrecovery.client.payload.SyncFoodHealingPayload;
 import amatsagu.balancedrecovery.client.payload.SyncNaturalHealthRegenerationPayload;
 import amatsagu.balancedrecovery.client.payload.SyncUniqueIngredientsPayload;
 import net.fabricmc.api.ClientModInitializer;
@@ -19,6 +20,7 @@ public class BalancedRecoveryClient implements ClientModInitializer {
 	private void initPayloads() {
 		ClientPlayNetworking.registerGlobalReceiver(SyncNaturalHealthRegenerationPayload.TYPE, new SyncNaturalHealthRegenerationPayload.Receiver());
 		ClientPlayNetworking.registerGlobalReceiver(SyncUniqueIngredientsPayload.TYPE, new SyncUniqueIngredientsPayload.Receiver());
+		ClientPlayNetworking.registerGlobalReceiver(SyncFoodHealingPayload.TYPE, new SyncFoodHealingPayload.Receiver());
 	}
 
 	private void initEvents() {

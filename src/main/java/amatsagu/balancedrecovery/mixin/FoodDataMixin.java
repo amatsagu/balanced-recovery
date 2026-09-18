@@ -3,7 +3,6 @@ package amatsagu.balancedrecovery.mixin;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import amatsagu.balancedrecovery.common.BalancedRecoveryConfig;
 import amatsagu.balancedrecovery.common.component.entity.FoodHealingComponent;
-import amatsagu.balancedrecovery.common.init.BalancedRecoveryEntityComponents;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.food.FoodData;
@@ -63,7 +62,7 @@ public abstract class FoodDataMixin {
 	private void balancedrecovery$treatAsHealth(int food, float saturation, CallbackInfo ci) {
 		if (cachedPlayer != null) {
 			food = Mth.floor(food * BalancedRecoveryConfig.healthGainMultiplier);
-			FoodHealingComponent foodHealing = BalancedRecoveryEntityComponents.FOOD_HEALING.get(cachedPlayer);
+			FoodHealingComponent foodHealing = FoodHealingComponent.get(cachedPlayer);
 			foodHealing.startHealing(food, saturation);
 			foodHealing.sync();
 		}

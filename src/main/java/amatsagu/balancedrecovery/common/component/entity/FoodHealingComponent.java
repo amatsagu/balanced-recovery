@@ -1,28 +1,30 @@
 package amatsagu.balancedrecovery.common.component.entity;
 
+import amatsagu.balancedrecovery.client.payload.SyncFoodHealingPayload;
 import amatsagu.balancedrecovery.common.BalancedRecovery;
 import amatsagu.balancedrecovery.common.BalancedRecoveryConfig;
-import amatsagu.balancedrecovery.common.init.BalancedRecoveryEntityComponents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
-import org.ladysnake.cca.api.v3.component.sync.AutoSyncedComponent;
-import org.ladysnake.cca.api.v3.component.tick.CommonTickingComponent;
 import vectorwing.farmersdelight.common.registry.ModEffects;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
-public class FoodHealingComponent implements AutoSyncedComponent, CommonTickingComponent {
+public class FoodHealingComponent {
 	private final Player obj;
 	private boolean fromSaturation = false;
 	private int healAmount = 0, ticksPerHeal = 0;
@@ -33,25 +35,41 @@ public class FoodHealingComponent implements AutoSyncedComponent, CommonTickingC
 		this.obj = obj;
 	}
 
-	@Override
+	public static FoodHealingComponent get(Player player) {
+		return ((FoodHealingHolder) player).balancedrecovery$getFoodHealing();
+	}
+
+	public void copyFrom(FoodHealingComponent other) {
+		this.fromSaturation = other.fromSaturation;
+		this.healAmount = other.healAmount;
+		this.ticksPerHeal = other.ticksPerHeal;
+		this.healTicks = other.healTicks;
+		this.amountHealed = other.amountHealed;
+	}
+
+	public void setClientValues(int healAmount, int ticksPerHeal, int healTicks, int amountHealed) {
+		this.healAmount = healAmount;
+		this.ticksPerHeal = ticksPerHeal;
+		this.healTicks = healTicks;
+		this.amountHealed = amountHealed;
+	}
+
 	public void readData(ValueInput input) {
-		fromSaturation = input.getBooleanOr("FromSaturation", false);
-		healAmount = input.getIntOr("HealAmount", 0);
-		ticksPerHeal = input.getIntOr("TicksPerHeal", 0);
-		healTicks = input.getIntOr("HealTicks", 0);
-		amountHealed = input.getIntOr("AmountHealed", 0);
+		fromSaturation = input.getBooleanOr("BalancedRecovery_FromSaturation", input.getBooleanOr("FromSaturation", false));
+		healAmount = input.getIntOr("BalancedRecovery_HealAmount", input.getIntOr("HealAmount", 0));
+		ticksPerHeal = input.getIntOr("BalancedRecovery_TicksPerHeal", input.getIntOr("TicksPerHeal", 0));
+		healTicks = input.getIntOr("BalancedRecovery_HealTicks", input.getIntOr("HealTicks", 0));
+		amountHealed = input.getIntOr("BalancedRecovery_AmountHealed", input.getIntOr("AmountHealed", 0));
 	}
 
-	@Override
 	public void writeData(ValueOutput output) {
-		output.putBoolean("FromSaturation", fromSaturation);
-		output.putInt("HealAmount", healAmount);
-		output.putInt("TicksPerHeal", ticksPerHeal);
-		output.putInt("HealTicks", healTicks);
-		output.putInt("AmountHealed", amountHealed);
+		output.putBoolean("BalancedRecovery_FromSaturation", fromSaturation);
+		output.putInt("BalancedRecovery_HealAmount", healAmount);
+		output.putInt("BalancedRecovery_TicksPerHeal", ticksPerHeal);
+		output.putInt("BalancedRecovery_HealTicks", healTicks);
+		output.putInt("BalancedRecovery_AmountHealed", amountHealed);
 	}
 
-	@Override
 	public void tick() {
 		tickFoodHealing();
 		tickWarmthSources();
@@ -59,7 +77,9 @@ public class FoodHealingComponent implements AutoSyncedComponent, CommonTickingC
 	}
 
 	public void sync() {
-		BalancedRecoveryEntityComponents.FOOD_HEALING.sync(obj);
+		if (obj instanceof ServerPlayer serverPlayer) {
+			SyncFoodHealingPayload.send(serverPlayer, this);
+		}
 	}
 
 	public void setFromSaturation(boolean fromSaturation) {
@@ -72,6 +92,14 @@ public class FoodHealingComponent implements AutoSyncedComponent, CommonTickingC
 
 	public int getAmountHealed() {
 		return amountHealed;
+	}
+
+	public int getHealTicks() {
+		return healTicks;
+	}
+
+	public int getTicksPerHeal() {
+		return ticksPerHeal;
 	}
 
 	public int getMaximumHealTicks() {
@@ -95,18 +123,32 @@ public class FoodHealingComponent implements AutoSyncedComponent, CommonTickingC
 		} else if (food > 0) {
 			healAmount = food;
 			ticksPerHeal = getTicksPerHeal(saturation);
-			for (Item item : BuiltInRegistries.ITEM) {
-				if (item.components().has(DataComponents.FOOD)) {
-					obj.getCooldowns().addCooldown(item.getDefaultInstance(), getMaximumHealTicks());
-				}
+			int maxHealTicks = getMaximumHealTicks();
+			for (Identifier id : getFoodItemIds()) {
+				obj.getCooldowns().addCooldown(id, maxHealTicks);
 			}
 			for (int i = 0; i < obj.getInventory().getContainerSize(); i++) {
 				ItemStack stack = obj.getInventory().getItem(i);
 				if (stack.has(DataComponents.FOOD)) {
-					obj.getCooldowns().addCooldown(stack, getMaximumHealTicks());
+					obj.getCooldowns().addCooldown(stack, maxHealTicks);
 				}
 			}
 		}
+	}
+
+	private static List<Identifier> FOOD_ITEM_IDS = null;
+
+	private static List<Identifier> getFoodItemIds() {
+		if (FOOD_ITEM_IDS == null) {
+			List<Identifier> list = new ArrayList<>();
+			for (Item item : BuiltInRegistries.ITEM) {
+				if (item.components().has(DataComponents.FOOD)) {
+					list.add(BuiltInRegistries.ITEM.getKey(item));
+				}
+			}
+			FOOD_ITEM_IDS = list;
+		}
+		return FOOD_ITEM_IDS;
 	}
 
 	public static int getTicksPerHeal(float saturation) {
@@ -130,7 +172,7 @@ public class FoodHealingComponent implements AutoSyncedComponent, CommonTickingC
 	}
 
 	private void tickWarmthSources() {
-		if (obj.tickCount % 20 == 0) {
+		if (obj.level() instanceof ServerLevel && obj.tickCount % 20 == 0) {
 			if (BalancedRecoveryConfig.warmthHealing) {
 				Optional<BlockPos> closestSource = obj.level().findBlocksInBoxByManhattanDistance(obj.blockPosition(), BalancedRecoveryConfig.warmthDetectionRange).filterState(BalancedRecoveryConfig::isWarmthSource).findFirst();
 				if (closestSource.isPresent()) {
@@ -141,7 +183,7 @@ public class FoodHealingComponent implements AutoSyncedComponent, CommonTickingC
 	}
 
 	private void tickNourishment() {
-		if (BalancedRecovery.farmersDelightLoaded && obj.hasEffect(ModEffects.NOURISHMENT)) {
+		if (BalancedRecovery.farmersDelightLoaded && obj.level() instanceof ServerLevel && obj.hasEffect(ModEffects.NOURISHMENT)) {
 			MobEffectInstance effect = obj.getEffect(ModEffects.NOURISHMENT);
 			int duration = effect.getDuration();
 			if (duration == MobEffectInstance.INFINITE_DURATION) {
