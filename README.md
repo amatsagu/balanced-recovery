@@ -17,7 +17,7 @@
   * `Hunger`: prevents you from healing using food, and can even cause damage at higher levels.
   * `Saturation`: instant heals you based on the amplifier.
   * `Nourishment`: slowly heals you every 10 seconds. This effect requires **Farmer's Delight** to be installed.
-- Adds new warmth effect: (lit) furnaces & campfires will give you weak regeneration effect when nearby (by default 5 blocks range).
+- Adds new warmth effect: (lit) furnaces & campfires will give you weak regeneration effect when nearby (by default 3 blocks range).
 
 ## Configuration
 
@@ -26,7 +26,7 @@ Settings can be changed in `.minecraft/config/balanced_recovery.json`:
 ```json
 {
   "warmthHealing": true,
-  "warmthDetectionRange": 5,
+  "warmthDetectionRange": 3,
   "fasterFluidConsumption": true,
   "healthGainMultiplier": 1.0,
   "regenerationTimeMultiplier": 1.0,

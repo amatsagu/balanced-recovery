@@ -27,7 +27,7 @@ import java.util.List;
 
 public class BalancedRecoveryConfig {
 	public static boolean warmthHealing = true;
-	public static int warmthDetectionRange = 5;
+	public static int warmthDetectionRange = 3;
 	public static boolean fasterFluidConsumption = true;
 
 	public static float healthGainMultiplier = 1F;
@@ -133,7 +133,7 @@ public class BalancedRecoveryConfig {
 	}
 
 	public static boolean isWarmthSource(BlockState state) {
-		if (state == null) return false;
+		if (state == null || compiledWarmthMatchers.isEmpty()) return false;
 		for (WarmthMatcher matcher : compiledWarmthMatchers) {
 			if (matcher.matches(state)) {
 				return true;

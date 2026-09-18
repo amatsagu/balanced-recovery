@@ -172,12 +172,13 @@ public class FoodHealingComponent {
 	}
 
 	private void tickWarmthSources() {
-		if (obj.level() instanceof ServerLevel && obj.tickCount % 20 == 0) {
-			if (BalancedRecoveryConfig.warmthHealing) {
-				Optional<BlockPos> closestSource = obj.level().findBlocksInBoxByManhattanDistance(obj.blockPosition(), BalancedRecoveryConfig.warmthDetectionRange).filterState(BalancedRecoveryConfig::isWarmthSource).findFirst();
-				if (closestSource.isPresent()) {
-					obj.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 80, 0, true, true, true));
-				}
+		if (BalancedRecoveryConfig.warmthHealing && obj.level() instanceof ServerLevel && (obj.tickCount + obj.getId()) % 80 == 0) {
+			if (BalancedRecoveryConfig.warmthBlocks.isEmpty()) {
+				return;
+			}
+			Optional<BlockPos> closestSource = obj.level().findBlocksInBoxByManhattanDistance(obj.blockPosition(), BalancedRecoveryConfig.warmthDetectionRange).filterState(BalancedRecoveryConfig::isWarmthSource).findFirst();
+			if (closestSource.isPresent()) {
+				obj.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 200, 0, true, true, true));
 			}
 		}
 	}
