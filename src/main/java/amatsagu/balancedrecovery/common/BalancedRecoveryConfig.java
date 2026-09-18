@@ -35,8 +35,17 @@ public class BalancedRecoveryConfig {
 
 	public static boolean displayHealthGained = true;
 
-	public static final List<String> warmthBlocks = new ArrayList<>();
-	public static final List<FoodModifier> foodModifiers = new ArrayList<>();
+	public static final List<String> warmthBlocks = new ArrayList<>(List.of(
+		"minecraft:campfire[lit=true]",
+		"minecraft:furnace[lit=true]",
+		"minecraft:smoker[lit=true]",
+		"minecraft:blast_furnace[lit=true]"
+	));
+	public static final List<FoodModifier> foodModifiers = new ArrayList<>(List.of(
+		new FoodModifier("minecraft:honey_bottle", 1.0F, 6.0F),
+		new FoodModifier("minecraft:pumpkin_pie", 1.0F, 3.0F),
+		new FoodModifier("minecraft:bread", 1.0F, 0.75F)
+	));
 
 	private static final List<WarmthMatcher> compiledWarmthMatchers = new ArrayList<>();
 
@@ -329,16 +338,5 @@ public class BalancedRecoveryConfig {
 			
 			return false;
 		}
-	}
-
-	static {
-		warmthBlocks.add("minecraft:campfire[lit=true]");
-		warmthBlocks.add("minecraft:furnace[lit=true]");
-		warmthBlocks.add("minecraft:smoker[lit=true]");
-		warmthBlocks.add("minecraft:blast_furnace[lit=true]");
-		foodModifiers.add(new FoodModifier("minecraft:honey_bottle", 1.0F, 6.0F));
-		foodModifiers.add(new FoodModifier("minecraft:pumpkin_pie", 1.0F, 3.0F));
-		foodModifiers.add(new FoodModifier("minecraft:bread", 1.0F, 0.75F));
-		load();
 	}
 }

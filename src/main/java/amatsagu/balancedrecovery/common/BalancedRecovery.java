@@ -22,6 +22,7 @@ public class BalancedRecovery implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
+		BalancedRecoveryConfig.load();
 		initPayloads();
 		initEvents();
 	}
